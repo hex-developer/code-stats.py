@@ -29,12 +29,18 @@ def users(request, name):
     new_xp = get_new_xp(name)
     machines = {}
     languages = {}
+    dates = {}
     for machine in Machine.objects.all().filter(user=name):
         machines[machine.name] = {"xps":get_machine_total_xp(name, machine.name), "new_xps":get_machine_new_xp(name, machine.name)}
         print(get_machine_new_xp(name, machine.name))
     for language in get_languages(name):
         languages[language] = {"xps":get_language_total_xp(name, language), "new_xps":get_language_new_xp(name, language)}
-    return JsonResponse({"user":name, "total_xp":total_xp, "new_xp":new_xp, "machines":machines, "languages":languages})
+    for date in Machine.objects.all().filter(user=name):
+        if not get_date(date.date) in dates:
+            dates[get_date(date.date)] = date.xp
+        else:
+            dates[get_date(date.date)] += date.xp
+    return JsonResponse({"user":name, "total_xp":total_xp, "new_xp":new_xp, "machines":machines, "languages":languages, "dates":dates})
 
 def get_total_xp(user):
     total_xp = 0
@@ -78,3 +84,6 @@ def get_language_new_xp(user, language):
     for entry in XPEntry.objects.all().filter(date__gt=(datetime.datetime.now() - datetime.timedelta(hours=12)) ,user=user, language=language):
         new_xp += entry.xp
     return new_xp
+
+def get_date(date):
+    return datetime.datetime.fromisoformat(date)
